@@ -324,43 +324,45 @@
         }
     }
     
-    function masterAnimate() {
-        ctx.clearRect(0, 0, innerWidth, innerHeight);
-        particlesArray.forEach(p => { p.update(); p.draw(); });
+    // BU FONKSİYONUN TAMAMINI KOPYALAYIP MEVCUT OLANLA DEĞİŞTİRİN
+
+function masterAnimate() {
+    ctx.clearRect(0, 0, innerWidth, innerHeight);
+    particlesArray.forEach(p => { p.update(); p.draw(); });
+    
+    floatingCards.forEach((card, index) => {
+        if (!card.isPaused) {
+            card.x += card.directionX;
+            card.y += card.directionY;
+            if (card.x <= 0 || card.x >= window.innerWidth - cardWidth) card.directionX *= -1;
+            if (card.y <= 0 || card.y >= window.innerHeight - cardHeight) card.directionY *= -1;
+        }
+
+        const cardRect = { left: card.x, top: card.y, right: card.x + cardWidth, bottom: card.y + cardHeight };
         
-        // PERFORMANS KATİLİ OLAN ÇİZGİ ÇİZME KODU KALDIRILDI
+        if (rectsOverlap(cardRect, safeZoneRect)) { 
+            card.directionX *= -1; 
+            card.directionY *= -1;
+            card.x += card.directionX * 2; 
+            card.y += card.directionY * 2;
+        }
 
-        floatingCards.forEach((card, index) => {
-            if (!card.isPaused) {
-                card.x += card.directionX; card.y += card.directionY;
-                if (card.x <= 0 || card.x >= window.innerWidth - cardWidth) card.directionX *= -1;
-                if (card.y <= 0 || card.y >= window.innerHeight - cardHeight) card.directionY *= -1;
-            }
-
-            const cardRect = { left: card.x, top: card.y, right: card.x + cardWidth, bottom: card.y + cardHeight };
-            
-            // Güvenli bölgeyle çarpışma (daha yumuşak)
-            if (rectsOverlap(cardRect, safeZoneRect)) { 
-                card.directionX *= -1; 
-                card.directionY *= -1;
-                card.x += card.directionX * 2; 
-                card.y += card.directionY * 2;
-            }
-
-            for (let i = index + 1; i < floatingCards.length; i++) {
-                if (rectsOverlap(cardRect, { left: floatingCards[i].x, top: floatingCards[i].y, right: floatingCards[i].x + cardWidth, bottom: floatingCards[i].y + cardHeight })) {
-                    if (!card.isPaused) {
-                        const tempX = card.directionX; const tempY = card.directionY;
-                        card.directionX = floatingCards[i].directionX; card.directionY = floatingCards[i].directionY;
-                        floatingCards[i].directionX = tempX; floatingCards[i].directionY = tempY;
-                    }
+        for (let i = index + 1; i < floatingCards.length; i++) {
+            if (rectsOverlap(cardRect, { left: floatingCards[i].x, top: floatingCards[i].y, right: floatingCards[i].x + cardWidth, bottom: floatingCards[i].y + cardHeight })) {
+                if (!card.isPaused) {
+                    const tempX = card.directionX; const tempY = card.directionY;
+                    card.directionX = floatingCards[i].directionX; card.directionY = floatingCards[i].directionY;
+                    floatingCards[i].directionX = tempX; floatingCards[i].directionY = tempY;
                 }
             }
-            card.element.style.transform = `translate3d(${card.x}px, ${card.y}px, 0)`;
-        });
+        }
         
-        requestAnimationFrame(masterAnimate);
-    }
+        // --- DÜZELTİLMİŞ SATIR BURADA ---
+        card.element.style.transform = `translate3d(${card.x}px, ${card.y}px, 0)`;
+    });
+    
+    requestAnimationFrame(masterAnimate);
+}
     
     initParticles();
     masterAnimate();
