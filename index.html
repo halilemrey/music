@@ -1,11 +1,281 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0; url=https://open.spotify.com/user/slhwdejaps98mgy3ldr2fpqks">
-  <title>Spotify</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Halil Emre - Music Profile</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    font-family: 'Poppins', sans-serif;
+    background-color: #121212;
+  }
+  #particle-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+  }
+  .floating-album {
+    /* Boyut artık JS tarafından dinamik olarak ayarlanıyor */
+    border-radius: 16px;
+    pointer-events: auto;
+    cursor: pointer;
+    transition: opacity 1.5s ease;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    will-change: transform;
+  }
+  .spotify-icon {
+    transition: transform 0.3s, filter 0.3s;
+    cursor: pointer;
+  }
+  .spotify-icon:hover {
+    transform: scale(1.1);
+    filter: brightness(1.3);
+  }
+  .content-safe-zone {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 400px;
+    max-width: 90%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+    text-align: center;
+    padding: 2.5rem;
+    background: rgba(25, 20, 20, 0.45);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    animation: fadeInUp 1s ease-out;
+  }
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translate(-50%, calc(-50% + 20px)); }
+    to { opacity: 1; transform: translate(-50%, -50%); }
+  }
+  .content-safe-zone * {
+    pointer-events: auto;
+  }
+
+  /* --- MOBİL İÇİN DUYARLILIK AYARLARI --- */
+  @media (max-width: 768px) {
+    .content-safe-zone {
+      width: 90%;
+      padding: 1.5rem;
+    }
+    .content-safe-zone h1 {
+      font-size: 2.5rem; /* text-5xl -> text-4xl */
+    }
+    .content-safe-zone p {
+      font-size: 1rem; /* text-lg -> text-base */
+    }
+    .content-safe-zone .spotify-icon {
+      width: 5rem; /* w-28 -> w-20 */
+    }
+  }
+</style>
 </head>
-<body>
-  <p><a href="https://open.spotify.com/user/slhwdejaps98mgy3ldr2fpqks"></a></p>
+<body class="text-white">
+
+  <canvas id="particle-canvas"></canvas>
+
+  <div class="content-safe-zone">
+    <h1 class="text-5xl font-bold mb-4">Halil Emre</h1>
+    <p class="text-lg mb-6 text-gray-300">
+      Welcome to my music space. Albums will find you here 🎶
+    </p>
+    <div class="flex gap-6 justify-center">
+      <a href="https://open.spotify.com/user/slhwdejaps98mgy3ldr2fpqks?si=03f3dba54b9a48aa" target="_blank">
+        <img src="https://cdn-icons-png.flaticon.com/512/174/174872.png" alt="Spotify" class="w-28 spotify-icon"/>
+      </a>
+    </div>
+  </div>
+
+  <div id="album-container" class="absolute top-0 left-0 w-full h-full z-0"></div>
+
+<script>
+    // --- YENİ: EKRAN BOYUTUNA GÖRE DİNAMİK AYARLAR ---
+    let albumSize;
+    let maxConcurrentAlbums;
+    let particleCount;
+
+    if (window.innerWidth <= 768) {
+        // Mobil Ayarları
+        albumSize = 70;
+        maxConcurrentAlbums = 4;
+        particleCount = 60;
+    } else {
+        // Masaüstü Ayarları
+        albumSize = 140;
+        maxConcurrentAlbums = 5;
+        particleCount = 120;
+    }
+    
+    const ALBUM_LIFETIME = 4000;
+    const FADE_OUT_DURATION = 2000;
+    const allAlbums = [
+        { url: "https://open.spotify.com/intl-tr/album/0mHYRe0jUP2pWxrL7oP5qO", img: "https://i.scdn.co/image/ab67616d00001e02c53fb79c2bf2c7c6c513c0d7" },
+        { url: "https://open.spotify.com/intl-tr/album/3R5F9IiOpmQIMvTDQg3YKQ", img: "https://i.scdn.co/image/ab67616d0000b273a945f95adbd9dc9f3e00b850" },
+        { url: "https://open.spotify.com/intl-tr/track/4lwfABJjnJYPIgLjuGiB63", img: "https://i.scdn.co/image/ab67616d00001e02f09a85f3a0e1df7ffb87f898" },
+        { url: "https://open.spotify.com/intl-tr/track/6si71supnBUhddjR2FJc2L", img: "https://i.scdn.co/image/ab67616d00001e02d41b79f27ef8d8df5a191219" },
+        { url: "https://open.spotify.com/intl-tr/album/https://open.spotify.com/intl-tr/track/3hRV0jL3vUpRrcy398teAU", img: "https://i.scdn.co/image/ab67616d0000b27317875a0610c23d8946454583" },
+        { url: "https://open.spotify.com/intl-tr/track/31AOj9sFz2gM0O3hMARRBx", img: "https://i.scdn.co/image/ab67616d0000b273e2dd4e821bcc3f70dc0c8ffd" },
+        { url: "https://open.spotify.com/intl-tr/track/07q0QVgO56EorrSGHC48y3", img: "https://i.scdn.co/image/ab67616d0000b2734384b6976cadaec272114022" }
+    ];
+
+    const albumContainer = document.getElementById('album-container');
+    const safeZoneEl = document.querySelector('.content-safe-zone');
+    let safeZoneRect;
+
+    function updateSafeZone() { safeZoneRect = safeZoneEl.getBoundingClientRect(); }
+    updateSafeZone();
+    // resize olayında sadece safeZone değil, tüm ayarların güncellenmesi gerekebilir,
+    // bu yüzden sayfa yenilemesi en basit yöntemdir. Gelişmiş senaryolarda tüm değişkenler yeniden hesaplanabilir.
+    window.addEventListener('resize', () => { window.location.reload(); });
+
+    const floatingAlbums = [];
+    function rectsOverlap(rect1, rect2) { return !(rect1.right < rect2.left || rect1.left > rect2.right || rect1.bottom < rect2.top || rect1.top > rect2.bottom); }
+    function getSafeRandomPosition() {
+        let x, y, isSafe, attempts = 0;
+        do {
+            x = Math.random() * (window.innerWidth - albumSize);
+            y = Math.random() * (window.innerHeight - albumSize);
+            const newAlbumRect = { left: x, top: y, right: x + albumSize, bottom: y + albumSize };
+            isSafe = true;
+            if (rectsOverlap(newAlbumRect, safeZoneRect)) { isSafe = false; }
+            if (isSafe) {
+                for (const existingAlbum of floatingAlbums) {
+                    if (rectsOverlap(newAlbumRect, { left: existingAlbum.x, top: existingAlbum.y, right: existingAlbum.x + albumSize, bottom: existingAlbum.y + albumSize })) {
+                        isSafe = false; break;
+                    }
+                }
+            }
+            attempts++;
+        } while (!isSafe && attempts < 100);
+        return { x, y };
+    }
+
+    function createFloatingAlbum(album) {
+        if (!album) return;
+        const { x, y } = getSafeRandomPosition();
+        const link = document.createElement('a');
+        link.href = album.url;
+        link.target = '_blank';
+        link.style.position = 'absolute';
+        link.style.opacity = '0';
+        link.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+        const img = document.createElement('img');
+        img.src = album.img;
+        img.className = 'floating-album';
+        // YENİ: Albüm boyutu dinamik olarak JS ile atanıyor
+        img.style.width = `${albumSize}px`;
+        img.style.height = `${albumSize}px`;
+
+        link.appendChild(img);
+        albumContainer.appendChild(link);
+        floatingAlbums.push({ albumData: album, element: link, x, y, directionX: (Math.random() - 0.5) * 0.5, directionY: (Math.random() - 0.5) * 0.5 });
+        setTimeout(() => { link.style.transition = `opacity ${FADE_OUT_DURATION / 1000}s ease`; link.style.opacity = '1'; }, 100);
+        setTimeout(() => {
+            link.style.opacity = '0';
+            setTimeout(() => {
+                const index = floatingAlbums.findIndex(fa => fa.element === link);
+                if (index > -1) floatingAlbums.splice(index, 1);
+                if (albumContainer.contains(link)) albumContainer.removeChild(link);
+            }, FADE_OUT_DURATION);
+        }, ALBUM_LIFETIME);
+    }
+
+    setInterval(() => {
+        if (floatingAlbums.length < maxConcurrentAlbums) {
+            const onScreenUrls = floatingAlbums.map(info => info.albumData.url);
+            let availableToSpawn = allAlbums.filter(album => !onScreenUrls.includes(album.url));
+            if (availableToSpawn.length === 0 && allAlbums.length > 0) {
+                availableToSpawn = allAlbums;
+            }
+            if (availableToSpawn.length > 0) {
+                const albumToCreate = availableToSpawn[Math.floor(Math.random() * availableToSpawn.length)];
+                createFloatingAlbum(albumToCreate);
+            }
+        }
+    }, 1000);
+    
+    const canvas = document.getElementById('particle-canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    let particlesArray;
+    const particleConfig = {
+        numberOfParticles: particleCount, // Değişken kullanılıyor
+        particleColor: '#1DB954', lineColor: '#2b5a3d', connectionDistance: 120, particleSpeed: 0.5, particleSize: 2
+    };
+    class Particle {
+        constructor(x, y, dX, dY, s, c) { this.x = x; this.y = y; this.directionX = dX; this.directionY = dY; this.size = s; this.color = c; }
+        draw() { ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2); ctx.fillStyle = this.color; ctx.fill(); }
+        update() {
+            if (this.x > canvas.width || this.x < 0) this.directionX *= -1;
+            if (this.y > canvas.height || this.y < 0) this.directionY *= -1;
+            this.x += this.directionX; this.y += this.directionY;
+        }
+    }
+    function initParticles() {
+        particlesArray = [];
+        for (let i = 0; i < particleConfig.numberOfParticles; i++) {
+            let s = (Math.random() * particleConfig.particleSize) + 1;
+            let x = (Math.random() * (innerWidth - s*2)) + s*2;
+            let y = (Math.random() * (innerHeight - s*2)) + s*2;
+            let dX = (Math.random() * particleConfig.particleSpeed) - (particleConfig.particleSpeed/2);
+            let dY = (Math.random() * particleConfig.particleSpeed) - (particleConfig.particleSpeed/2);
+            particlesArray.push(new Particle(x, y, dX, dY, s, particleConfig.particleColor));
+        }
+    }
+    function hexToRgb(h) { let r = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(h); return r ? `${parseInt(r[1],16)}, ${parseInt(r[2],16)}, ${parseInt(r[3],16)}` : null; }
+    const lineRgbColor = hexToRgb(particleConfig.lineColor);
+    
+    function masterAnimate() {
+        ctx.clearRect(0, 0, innerWidth, innerHeight);
+        for (const particle of particlesArray) { particle.update(); particle.draw(); }
+        let opacityValue = 1;
+        for (let a = 0; a < particlesArray.length; a++) {
+            for (let b = a; b < particlesArray.length; b++) {
+                let distance = ((particlesArray[a].x - particlesArray[b].x) ** 2) + ((particlesArray[a].y - particlesArray[b].y) ** 2);
+                if (distance < (particleConfig.connectionDistance ** 2)) {
+                    opacityValue = 1 - (distance / (particleConfig.connectionDistance ** 2));
+                    ctx.strokeStyle = `rgba(${lineRgbColor}, ${opacityValue})`;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath(); ctx.moveTo(particlesArray[a].x, particlesArray[a].y); ctx.lineTo(particlesArray[b].x, particlesArray[b].y); ctx.stroke();
+                }
+            }
+        }
+        floatingAlbums.forEach((album, index) => {
+            album.x += album.directionX; album.y += album.directionY;
+            if (album.x <= 0 || album.x >= window.innerWidth - albumSize) album.directionX *= -1;
+            if (album.y <= 0 || album.y >= window.innerHeight - albumSize) album.directionY *= -1;
+            const albumRect = { left: album.x, top: album.y, right: album.x + albumSize, bottom: album.y + albumSize };
+            if (rectsOverlap(albumRect, safeZoneRect)) { album.directionX *= -1.2; album.directionY *= -1.2; album.x += album.directionX * 5; album.y += album.directionY * 5; }
+            for (let i = index + 1; i < floatingAlbums.length; i++) {
+                if (rectsOverlap(albumRect, { left: floatingAlbums[i].x, top: floatingAlbums[i].y, right: floatingAlbums[i].x + albumSize, bottom: floatingAlbums[i].y + albumSize })) {
+                    const tempX = album.directionX; const tempY = album.directionY;
+                    album.directionX = floatingAlbums[i].directionX; album.directionY = floatingAlbums[i].directionY;
+                    floatingAlbums[i].directionX = tempX; floatingAlbums[i].directionY = tempY;
+                }
+            }
+            album.element.style.transform = `translate3d(${album.x}px, ${album.y}px, 0)`;
+        });
+        
+        requestAnimationFrame(masterAnimate);
+    }
+    
+    initParticles();
+    masterAnimate();
+</script>
+
 </body>
 </html>
