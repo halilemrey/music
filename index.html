@@ -23,13 +23,13 @@
     height: 100%;
     z-index: -1;
   }
-  .floating-album {
-    border-radius: 16px;
-    pointer-events: auto;
-    cursor: pointer;
-    transition: opacity 1.5s ease;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  .card-wrapper {
+    position: absolute;
     will-change: transform;
+    transition: opacity 1.5s ease;
+  }
+  .card-wrapper iframe {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   }
   .spotify-icon {
     transition: transform 0.3s, filter 0.3s;
@@ -69,31 +69,18 @@
     bottom: 15px;
     left: 50%;
     transform: translateX(-50%);
-    font-size: 0.65rem;
+    font-size: 0.7rem;
     color: rgba(255, 255, 255, 0.4);
     text-align: center;
     width: 90%;
     z-index: 10;
   }
-
-  /* --- MOBİL İÇİN DUYARLILIK AYARLARI --- */
   @media (max-width: 768px) {
-    .content-safe-zone {
-      width: 90%;
-      padding: 1.5rem;
-    }
-    .content-safe-zone h1 {
-      font-size: 2.5rem;
-    }
-    .content-safe-zone p {
-      font-size: 1rem;
-    }
-    .content-safe-zone .spotify-icon {
-      width: 5rem;
-    }
-    .footer-disclaimer {
-      font-size: 0.5rem;
-    }
+    .content-safe-zone { width: 90%; padding: 1.5rem; }
+    .content-safe-zone h1 { font-size: 2.5rem; }
+    .content-safe-zone p { font-size: 1rem; }
+    .content-safe-zone .spotify-icon { width: 5rem; }
+    .footer-disclaimer { font-size: 0.6rem; }
   }
 </style>
 </head>
@@ -108,7 +95,7 @@
   <div class="content-safe-zone">
     <h1 class="text-5xl font-bold mb-4">Halil Emre</h1>
     <p class="text-lg mb-6 text-gray-300">
-      Welcome to my music space. Albums will find you here 🎶
+      Welcome to my music space. Cards will find you here 🎶
     </p>
     <div class="flex gap-6 justify-center">
       <a href="https://open.spotify.com/user/slhwdejaps98mgy3ldr2fpqks?si=03f3dba54b9a48aa" target="_blank">
@@ -117,36 +104,41 @@
     </div>
   </div>
 
-  <div id="album-container" class="absolute top-0 left-0 w-full h-full z-0"></div>
+  <div id="card-container" class="absolute top-0 left-0 w-full h-full z-0"></div>
 
 <script>
-    let albumSize;
-    let maxConcurrentAlbums;
+    // --- KARTLAR İÇİN DİNAMİK AYARLAR ---
+    let cardWidth, cardHeight;
+    let maxConcurrentCards;
     let particleCount;
 
     if (window.innerWidth <= 768) {
-        albumSize = 70;
-        maxConcurrentAlbums = 4;
-        particleCount = 80;
+        cardWidth = 200; cardHeight = 100; maxConcurrentCards = 4; particleCount = 100;
     } else {
-        albumSize = 140;
-        maxConcurrentAlbums = 5;
-        particleCount = 120;
+        cardWidth = 300; cardHeight = 152; maxConcurrentCards = 5; particleCount = 100;
     }
     
-    const ALBUM_LIFETIME = 4000;
-    const FADE_OUT_DURATION = 2000;
-    const allAlbums = [
-        { url: "https://open.spotify.com/intl-tr/album/0mHYRe0jUP2pWxrL7oP5qO", img: "https://i.scdn.co/image/ab67616d00001e02c53fb79c2bf2c7c6c513c0d7" },
-        { url: "https://open.spotify.com/intl-tr/album/3R5F9IiOpmQIMvTDQg3YKQ", img: "https://i.scdn.co/image/ab67616d0000b273a945f95adbd9dc9f3e00b850" },
-        { url: "https://open.spotify.com/intl-tr/track/4lwfABJjnJYPIgLjuGiB63", img: "https://i.scdn.co/image/ab67616d00001e02f09a85f3a0e1df7ffb87f898" },
-        { url: "https://open.spotify.com/intl-tr/track/6si71supnBUhddjR2FJc2L", img: "https://i.scdn.co/image/ab67616d00001e02d41b79f27ef8d8df5a191219" },
-        { url: "https://open.spotify.com/intl-tr/album/https://open.spotify.com/intl-tr/track/3hRV0jL3vUpRrcy398teAU", img: "https://i.scdn.co/image/ab67616d0000b27317875a0610c23d8946454583" },
-        { url: "https://open.spotify.com/intl-tr/track/31AOj9sFz2gM0O3hMARRBx", img: "https://i.scdn.co/image/ab67616d0000b273e2dd4e821bcc3f70dc0c8ffd" },
-        { url: "https://open.spotify.com/intl-tr/track/07q0QVgO56EorrSGHC48y3", img: "https://i.scdn.co/image/ab67616d0000b2734384b6976cadaec272114022" }
+    const CARD_LIFETIME = 5000;
+    const FADE_OUT_DURATION = 1500;
+
+    // SİZİN ORİJİNAL VERİ YAPINIZ KORUNDU.
+    const allCards = [
+        // Buraya kendi Spotify Embed URL'lerinizi girin
+        { embedSrc: "https://open.spotify.com/embed/track/07q0QVgO56EorrSGHC48y3?utm_source=generator" },
+        { embedSrc: "https://open.spotify.com/embed/track/6si71supnBUhddjR2FJc2L?utm_source=generator" },
+        { embedSrc: "https://open.spotify.com/embed/album/0mHYRe0jUP2pWxrL7oP5qO?utm_source=generator" },
+        { embedSrc: "https://open.spotify.com/embed/track/3tCcO0uqXnoB8NnFuMPoIS?utm_source=generator" },
+        { embedSrc: "https://open.spotify.com/embed/track/68xnudIZzP49DreYAMlbqZ?utm_source=generator" },
+        { embedSrc: "https://open.spotify.com/embed/track/1wMvP4KuZOcA3kum0TE6x6?utm_source=generator" },
+        { embedSrc: "https://open.spotify.com/embed/track/4lwfABJjnJYPIgLjuGiB63?utm_source=generator" },
+        { embedSrc: "https://open.spotify.com/embed/track/3hRV0jL3vUpRrcy398teAU?utm_source=generator" },
+        { embedSrc: "https://open.spotify.com/embed/track/6EMErc5L7mnqJ5JsWFYRgX?utm_source=generator" },
+	      { embedSrc: "https://open.spotify.com/embed/track/52v12pqh8SBzZ6OSi8ciUL?utm_source=generator" },
+	      { embedSrc: "https://open.spotify.com/embed/track/6uS2G7PdDL0qmYs6glOgrO?utm_source=generator" },
+        { embedSrc: "https://open.spotify.com/embed/track/31AOj9sFz2gM0O3hMARRBx?utm_source=generator" }
     ];
 
-    const albumContainer = document.getElementById('album-container');
+    const cardContainer = document.getElementById('card-container');
     const safeZoneEl = document.querySelector('.content-safe-zone');
     let safeZoneRect;
 
@@ -154,19 +146,22 @@
     updateSafeZone();
     window.addEventListener('resize', () => { window.location.reload(); });
 
-    const floatingAlbums = [];
+    const floatingCards = [];
+    const activeCards = {}; // Oynatılan kartları ID ile takip etmek için
+
     function rectsOverlap(rect1, rect2) { return !(rect1.right < rect2.left || rect1.left > rect2.right || rect1.bottom < rect2.top || rect1.top > rect2.bottom); }
+    
     function getSafeRandomPosition() {
         let x, y, isSafe, attempts = 0;
         do {
-            x = Math.random() * (window.innerWidth - albumSize);
-            y = Math.random() * (window.innerHeight - albumSize);
-            const newAlbumRect = { left: x, top: y, right: x + albumSize, bottom: y + albumSize };
+            x = Math.random() * (window.innerWidth - cardWidth);
+            y = Math.random() * (window.innerHeight - cardHeight);
+            const newCardRect = { left: x, top: y, right: x + cardWidth, bottom: y + cardHeight };
             isSafe = true;
-            if (rectsOverlap(newAlbumRect, safeZoneRect)) { isSafe = false; }
+            if (rectsOverlap(newCardRect, safeZoneRect)) { isSafe = false; }
             if (isSafe) {
-                for (const existingAlbum of floatingAlbums) {
-                    if (rectsOverlap(newAlbumRect, { left: existingAlbum.x, top: existingAlbum.y, right: existingAlbum.x + albumSize, bottom: existingAlbum.y + albumSize })) {
+                for (const existingCard of floatingCards) {
+                    if (rectsOverlap(newCardRect, { left: existingCard.x, top: existingCard.y, right: existingCard.x + cardWidth, bottom: existingCard.y + cardHeight })) {
                         isSafe = false; break;
                     }
                 }
@@ -176,48 +171,115 @@
         return { x, y };
     }
 
-    function createFloatingAlbum(album) {
-        if (!album) return;
+    function createFloatingCard(cardData) {
+        if (!cardData) return;
         const { x, y } = getSafeRandomPosition();
-        const link = document.createElement('a');
-        link.href = album.url;
-        link.target = '_blank';
-        link.style.position = 'absolute';
-        link.style.opacity = '0';
-        link.style.transform = `translate3d(${x}px, ${y}px, 0)`;
-        const img = document.createElement('img');
-        img.src = album.img;
-        img.className = 'floating-album';
-        img.style.width = `${albumSize}px`;
-        img.style.height = `${albumSize}px`;
-        link.appendChild(img);
-        albumContainer.appendChild(link);
-        floatingAlbums.push({ albumData: album, element: link, x, y, directionX: (Math.random() - 0.5) * 0.5, directionY: (Math.random() - 0.5) * 0.5 });
-        setTimeout(() => { link.style.transition = `opacity ${FADE_OUT_DURATION / 1000}s ease`; link.style.opacity = '1'; }, 100);
+        
+        const cardId = 'card-' + Date.now() + Math.random();
+        const wrapper = document.createElement('div');
+        wrapper.className = 'card-wrapper';
+        wrapper.id = cardId;
+        wrapper.style.opacity = '0';
+        wrapper.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+
+        const iframe = document.createElement('iframe');
+        iframe.style.borderRadius = '12px';
+        
+        // DOĞRUDAN SİZİN GİRDİĞİNİZ URL KULLANILIYOR
+        iframe.src = cardData.embedSrc;
+
+        iframe.width = `${cardWidth}px`;
+        iframe.height = `${cardHeight}px`;
+        iframe.frameBorder = '0';
+        iframe.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
+        iframe.loading = "lazy";
+        
+        wrapper.appendChild(iframe);
+        cardContainer.appendChild(wrapper);
+        
+        const cardInfo = {
+            cardData: cardData,
+            element: wrapper,
+            x, y,
+            directionX: (Math.random() - 0.5) * 0.4,
+            directionY: (Math.random() - 0.5) * 0.4,
+            isPaused: false // Kartın hareketini kontrol eden bayrak
+        };
+        floatingCards.push(cardInfo);
+        activeCards[cardId] = cardInfo;
+
+        setTimeout(() => { wrapper.style.opacity = '1'; }, 100);
+        
         setTimeout(() => {
-            link.style.opacity = '0';
+            wrapper.style.opacity = '0';
             setTimeout(() => {
-                const index = floatingAlbums.findIndex(fa => fa.element === link);
-                if (index > -1) floatingAlbums.splice(index, 1);
-                if (albumContainer.contains(link)) albumContainer.removeChild(link);
+                const index = floatingCards.findIndex(fc => fc.element.id === cardId);
+                if (index > -1) floatingCards.splice(index, 1);
+                delete activeCards[cardId];
+                if (cardContainer.contains(wrapper)) cardContainer.removeChild(wrapper);
             }, FADE_OUT_DURATION);
-        }, ALBUM_LIFETIME);
+        }, CARD_LIFETIME);
     }
 
-    setInterval(() => {
-        if (floatingAlbums.length < maxConcurrentAlbums) {
-            const onScreenUrls = floatingAlbums.map(info => info.albumData.url);
-            let availableToSpawn = allAlbums.filter(album => !onScreenUrls.includes(album.url));
-            if (availableToSpawn.length === 0 && allAlbums.length > 0) {
-                availableToSpawn = allAlbums;
+    // Spotify iframe'inden gelen "play/pause" mesajlarını dinle
+    window.addEventListener('message', event => {
+        // Güvenlik için origin kontrolü yapılabilir, ancak Spotify'ın tüm olası
+        // CDN'lerini bilmek zor olabilir. Şimdilik bu kontrolü esnek tutuyoruz.
+        try {
+            const data = JSON.parse(event.data);
+             // Spotify'dan gelen 'play' veya 'pause' komutlarını arıyoruz
+            if (data.command === 'play' || data.command === 'pause') {
+                let sourceIframe;
+                document.querySelectorAll('iframe').forEach(iframe => {
+                    if (iframe.contentWindow === event.source) {
+                        sourceIframe = iframe;
+                    }
+                });
+
+                if (sourceIframe) {
+                    const wrapperId = sourceIframe.parentElement.id;
+                    const card = activeCards[wrapperId];
+                    if (card) {
+                        // isPaused'ı Spotify'dan gelen duruma göre ayarla
+                        card.isPaused = (data.command === 'play');
+                    }
+                }
             }
-            if (availableToSpawn.length > 0) {
-                const albumToCreate = availableToSpawn[Math.floor(Math.random() * availableToSpawn.length)];
-                createFloatingAlbum(albumToCreate);
+        } catch (e) { /* Mesaj JSON değilse veya beklenen formatta değilse hata vermemesi için. */ }
+    });
+
+    // Kart oluşturma döngüsü (Adil seçim mantığı ile)
+    let shuffledPlaylist = [];
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+        return array;
+    }
+    function getNextCard() {
+        if (shuffledPlaylist.length === 0) {
+            shuffledPlaylist = shuffleArray([...allCards]);
+        }
+        return shuffledPlaylist.pop();
+    }
+    setInterval(() => {
+        if (floatingCards.length < maxConcurrentCards) {
+            const onScreenSrcs = floatingCards.map(info => info.cardData.embedSrc);
+            let nextCard = getNextCard();
+            let attempts = 0;
+            while (onScreenSrcs.includes(nextCard.embedSrc) && attempts < allCards.length) {
+                shuffledPlaylist.unshift(nextCard);
+                nextCard = getNextCard();
+                attempts++;
+            }
+            if (!onScreenSrcs.includes(nextCard.embedSrc)) {
+                createFloatingCard(nextCard);
             }
         }
-    }, 1000);
+    }, 1500);
     
+    // --- PARTİKÜL KODU (Değişiklik yok) ---
     const canvas = document.getElementById('particle-canvas');
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth; canvas.height = window.innerHeight;
@@ -251,7 +313,7 @@
     
     function masterAnimate() {
         ctx.clearRect(0, 0, innerWidth, innerHeight);
-        for (const particle of particlesArray) { particle.update(); particle.draw(); }
+        particlesArray.forEach(p => { p.update(); p.draw(); });
         let opacityValue = 1;
         for (let a = 0; a < particlesArray.length; a++) {
             for (let b = a; b < particlesArray.length; b++) {
@@ -264,20 +326,27 @@
                 }
             }
         }
-        floatingAlbums.forEach((album, index) => {
-            album.x += album.directionX; album.y += album.directionY;
-            if (album.x <= 0 || album.x >= window.innerWidth - albumSize) album.directionX *= -1;
-            if (album.y <= 0 || album.y >= window.innerHeight - albumSize) album.directionY *= -1;
-            const albumRect = { left: album.x, top: album.y, right: album.x + albumSize, bottom: album.y + albumSize };
-            if (rectsOverlap(albumRect, safeZoneRect)) { album.directionX *= -1.2; album.directionY *= -1.2; album.x += album.directionX * 5; album.y += album.directionY * 5; }
-            for (let i = index + 1; i < floatingAlbums.length; i++) {
-                if (rectsOverlap(albumRect, { left: floatingAlbums[i].x, top: floatingAlbums[i].y, right: floatingAlbums[i].x + albumSize, bottom: floatingAlbums[i].y + albumSize })) {
-                    const tempX = album.directionX; const tempY = album.directionY;
-                    album.directionX = floatingAlbums[i].directionX; album.directionY = floatingAlbums[i].directionY;
-                    floatingAlbums[i].directionX = tempX; floatingAlbums[i].directionY = tempY;
+        
+        floatingCards.forEach((card, index) => {
+            // Sadece kart duraklatılmamışsa hareket etsin
+            if (!card.isPaused) {
+                card.x += card.directionX; card.y += card.directionY;
+                if (card.x <= 0 || card.x >= window.innerWidth - cardWidth) card.directionX *= -1;
+                if (card.y <= 0 || card.y >= window.innerHeight - cardHeight) card.directionY *= -1;
+            }
+
+            const cardRect = { left: card.x, top: card.y, right: card.x + cardWidth, bottom: card.y + cardHeight };
+            if (rectsOverlap(cardRect, safeZoneRect)) { card.directionX *= -1.2; card.directionY *= -1.2; card.x += card.directionX * 5; card.y += card.directionY * 5; }
+            for (let i = index + 1; i < floatingCards.length; i++) {
+                if (rectsOverlap(cardRect, { left: floatingCards[i].x, top: floatingCards[i].y, right: floatingCards[i].x + cardWidth, bottom: floatingCards[i].y + cardHeight })) {
+                    if (!card.isPaused) {
+                        const tempX = card.directionX; const tempY = card.directionY;
+                        card.directionX = floatingCards[i].directionX; card.directionY = floatingCards[i].directionY;
+                        floatingCards[i].directionX = tempX; floatingCards[i].directionY = tempY;
+                    }
                 }
             }
-            album.element.style.transform = `translate3d(${album.x}px, ${album.y}px, 0)`;
+            card.element.style.transform = `translate3d(${card.x}px, ${card.y}px, 0)`;
         });
         
         requestAnimationFrame(masterAnimate);
