@@ -27,9 +27,10 @@
     position: absolute;
     will-change: transform;
     transition: opacity 1.5s ease;
+  }
+  .card-wrapper iframe {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
   }
- 
   .spotify-icon {
     transition: transform 0.3s, filter 0.3s;
     cursor: pointer;
@@ -58,14 +59,19 @@
     from { opacity: 0; transform: translate(-50%, calc(-50% + 20px)); }
     to { opacity: 1; transform: translate(-50%, -50%); }
   }
+  
+  /* YENİ EKLENEN KISIM */
   .logo-container {
-    opacity: 0;
+    opacity: 0; /* Başlangıçta görünmez yap */
+    /* Animasyon: 1.2 saniye sürsün, 1.5 saniye sonra başlasın ve sonda görünür kalsın */
     animation: fadeIn 1.2s ease-out 1.5s forwards;
   }
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
   }
+  /* YENİ EKLENEN KISIM BİTİŞ */
+
   .content-safe-zone * {
     pointer-events: auto;
   }
@@ -92,9 +98,11 @@
 <body class="text-white">
 
 <canvas id="particle-canvas"></canvas>
+
 <div class="footer-disclaimer">
   Bu site kişisel ve ticari olmayan bir projedir. Tüm albüm kapakları ve marka logoları, ilgili sahiplerinin mülkiyetindedir.
 </div>
+
 <div class="content-safe-zone">
   <h1 class="text-5xl font-bold mb-4">Halil Emre</h1>
   <p class="text-lg mb-6 text-gray-300">
@@ -106,78 +114,178 @@
     </a>
   </div>
 </div>
+
 <div id="card-container" class="absolute top-0 left-0 w-full h-full z-0"></div>
 
 <script>
 //---- DEĞİŞKEN TANIMLAMALARI (TEK BİR YERDE) ----//
 let cardWidth, cardHeight, maxConcurrentCards, particleCount;
 let cardScale = 1.0;
+
 const CARD_LIFETIME = 5000;
 const FADE_OUT_DURATION = 1500;
 const allCards = [
-  { embedSrc: "https://open.spotify.com/embed/track/07q0QVgO56EorrSGHC48y3?utm_source=generator" }, { embedSrc: "https://open.spotify.com/embed/track/6si71supnBUhddjR2FJc2L?utm_source=generator" },
-  { embedSrc: "https://open.spotify.com/embed/album/0mHYRe0jUP2pWxrL7oP5qO?utm_source=generator" }, { embedSrc: "https://open.spotify.com/embed/track/3tCcO0uqXnoB8NnFuMPoIS?utm_source=generator" },
-  { embedSrc: "https://open.spotify.com/embed/track/68xnudIZzP49DreYAMlbqZ?utm_source=generator" }, { embedSrc: "https://open.spotify.com/embed/track/1wMvP4KuZOcA3kum0TE6x6?utm_source=generator" },
-  { embedSrc: "https://open.spotify.com/embed/track/4lwfABJjnJYPIgLjuGiB63?utm_source=generator" }, { embedSrc: "https://open.spotify.com/embed/track/3hRV0jL3vUpRrcy398teAU?utm_source=generator" },
-  { embedSrc: "https://open.spotify.com/embed/track/6EMErc5L7mnqJ5JsWFYRgX?utm_source=generator" }, { embedSrc: "https://open.spotify.com/embed/track/52v12pqh8SBzZ6OSi8ciUL?utm_source=generator" },
-  { embedSrc: "https://open.spotify.com/embed/track/6uS2G7PdDL0qmYs6glOgrO?utm_source=generator" }, { embedSrc: "https://open.spotify.com/embed/track/31AOj9sFz2gM0O3hMARRBx?utm_source=generator" }
+  { embedSrc: "https://open.spotify.com/embed/track/07q0QVgO56EorrSGHC48y3?utm_source=generator" },
+  { embedSrc: "https://open.spotify.com/embed/track/6si71supnBUhddjR2FJc2L?utm_source=generator" },
+  { embedSrc: "https://open.spotify.com/embed/album/0mHYRe0jUP2pWxrL7oP5qO?utm_source=generator" },
+  { embedSrc: "https://open.spotify.com/embed/track/3tCcO0uqXnoB8NnFuMPoIS?utm_source=generator" },
+  { embedSrc: "https://open.spotify.com/embed/track/68xnudIZzP49DreYAMlbqZ?utm_source=generator" },
+  { embedSrc: "https://open.spotify.com/embed/track/1wMvP4KuZOcA3kum0TE6x6?utm_source=generator" },
+  { embedSrc: "https://open.spotify.com/embed/track/4lwfABJjnJYPIgLjuGiB63?utm_source=generator" },
+  { embedSrc: "https://open.spotify.com/embed/track/3hRV0jL3vUpRrcy398teAU?utm_source=generator" },
+  { embedSrc: "https://open.spotify.com/embed/track/6EMErc5L7mnqJ5JsWFYRgX?utm_source=generator" },
+  { embedSrc: "https://open.spotify.com/embed/track/52v12pqh8SBzZ6OSi8ciUL?utm_source=generator" },
+  { embedSrc: "https://open.spotify.com/embed/track/6uS2G7PdDL0qmYs6glOgrO?utm_source=generator" },
+  { embedSrc: "https://open.spotify.com/embed/track/31AOj9sFz2gM0O3hMARRBx?utm_source=generator" }
 ];
+
 const cardContainer = document.getElementById('card-container');
 const safeZoneEl = document.querySelector('.content-safe-zone');
 const canvas = document.getElementById('particle-canvas');
 const ctx = canvas.getContext('2d');
-let safeZoneRect, floatingCards = [], activeCards = {}, particlesArray = [], shuffledPlaylist = [];
+
+let safeZoneRect;
+let floatingCards = [];
+let activeCards = {};
+let particlesArray = [];
+let shuffledPlaylist = [];
+
 const starColors = ['#FFFFFF', '#E0E0E0', '#B0B0B0', '#ADD8E6'];
 
 //---- SINIF TANIMLAMALARI (CLASSES) ----//
 class Particle {
-  constructor(x, y, dx, dy, radius, color, opacity) { this.x = x; this.y = y; this.directionX = dx; this.directionY = dy; this.radius = radius; this.baseRadius = radius; this.color = color; this.opacity = opacity; this.pulseSpeed = Math.random() * 0.04 + 0.01; this.angle = Math.random() * Math.PI * 2; }
-  draw() { ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2); ctx.fillStyle = `rgba(${this.hexToRgb(this.color)}, ${this.opacity})`; ctx.fill(); ctx.closePath(); }
-  update() { if (this.x > canvas.width + this.radius) this.x = -this.radius; if (this.x < -this.radius) this.x = canvas.width + this.radius; if (this.y > canvas.height + this.radius) this.y = -this.radius; if (this.y < -this.radius) this.y = canvas.height + this.radius; this.angle += this.pulseSpeed; this.radius = this.baseRadius + Math.sin(this.angle) * (this.baseRadius * 0.2); this.x += this.directionX; this.y += this.directionY; }
-  hexToRgb(hex) { let r = 0, g = 0, b = 0; if (hex.length == 7) { r = parseInt(hex.substring(1, 3), 16); g = parseInt(hex.substring(3, 5), 16); b = parseInt(hex.substring(5, 7), 16); } return `${r},${g},${b}`; }
+  constructor(x, y, dx, dy, radius, color, opacity) {
+    this.x = x;
+    this.y = y;
+    this.directionX = dx;
+    this.directionY = dy;
+    this.radius = radius;
+    this.baseRadius = radius;
+    this.color = color;
+    this.opacity = opacity;
+    this.pulseSpeed = Math.random() * 0.04 + 0.01;
+    this.angle = Math.random() * Math.PI * 2;
+  }
+  draw() {
+    ctx.beginPath();
+    ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${this.hexToRgb(this.color)}, ${this.opacity})`;
+    ctx.fill();
+    ctx.closePath();
+  }
+  update() {
+    if (this.x > canvas.width + this.radius) this.x = -this.radius;
+    if (this.x < -this.radius) this.x = canvas.width + this.radius;
+    if (this.y > canvas.height + this.radius) this.y = -this.radius;
+    if (this.y < -this.radius) this.y = canvas.height + this.radius;
+    this.angle += this.pulseSpeed;
+    this.radius = this.baseRadius + Math.sin(this.angle) * (this.baseRadius * 0.2);
+    this.x += this.directionX;
+    this.y += this.directionY;
+  }
+  hexToRgb(hex) {
+    let r = 0, g = 0, b = 0;
+    if (hex.length == 7) {
+        r = parseInt(hex.substring(1, 3), 16);
+        g = parseInt(hex.substring(3, 5), 16);
+        b = parseInt(hex.substring(5, 7), 16);
+    }
+    return `${r},${g},${b}`;
+  }
 }
 
 //---- FONKSİYON TANIMLAMALARI ----//
-function setDynamicVariables() { if (window.innerWidth <= 768) { cardWidth = 150; cardHeight = 96; maxConcurrentCards = 3; particleCount = 110; cardScale = 0.9; } else { cardWidth = 300; cardHeight = 152; maxConcurrentCards = 4; particleCount = 200; cardScale = 1.0; } }
-function initParticles() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; particlesArray = []; const layers = [ { count: Math.floor(particleCount * 0.25), radius: 0.5, speed: 0.1, opacity: 0.4 }, { count: Math.floor(particleCount * 0.50), radius: 1.0, speed: 0.2, opacity: 0.7 }, { count: Math.floor(particleCount * 0.25), radius: 1.5, speed: 0.3, opacity: 1.0 } ]; layers.forEach(layer => { for (let i = 0; i < layer.count; i++) { const x = Math.random() * canvas.width; const y = Math.random() * canvas.height; const dx = (Math.random() - 0.5) * layer.speed; const dy = (Math.random() - 0.5) * layer.speed; const radius = Math.random() * layer.radius + 0.5; const color = starColors[Math.floor(Math.random() * starColors.length)]; particlesArray.push(new Particle(x, y, dx, dy, radius, color, layer.opacity)); } }); }
-function updateSafeZone() { safeZoneRect = safeZoneEl.getBoundingClientRect(); }
-function rectsOverlap(r1, r2) { return !(r1.right < r2.left || r1.left > r2.right || r1.bottom < r2.top || r1.top > r2.bottom); }
-function getSafeRandomPosition() { let x, y, isSafe, attempts = 0; do { let effectiveCardWidth = cardWidth * cardScale; let effectiveCardHeight = cardHeight * cardScale; x = Math.random() * (window.innerWidth - effectiveCardWidth); y = Math.random() * (window.innerHeight - effectiveCardHeight); const newRect = { left: x, top: y, right: x + effectiveCardWidth, bottom: y + effectiveCardHeight }; isSafe = !rectsOverlap(newRect, safeZoneRect); if (isSafe) { for (const existing of floatingCards) { const existingRect = { left: existing.x, top: existing.y, right: existing.x + (cardWidth * cardScale), bottom: existing.y + (cardHeight * cardScale) }; if (rectsOverlap(newRect, existingRect)) { isSafe = false; break; } } } attempts++; } while (!isSafe && attempts < 100); return { x, y }; }
+function setDynamicVariables() {
+  if (window.innerWidth <= 768) {
+    cardWidth = 150;
+    cardHeight = 96;
+    maxConcurrentCards = 3;
+    particleCount = 120;
+    // MOBİL İÇİN KART ÖLÇEĞİ: Buradaki değeri değiştirerek boyutu ayarlayabilirsiniz.
+    cardScale = 0.9; 
+  } else {
+    cardWidth = 300;
+    cardHeight = 152;
+    maxConcurrentCards = 4;
+    particleCount = 200;
+    cardScale = 1.0;
+  }
+}
+
+function initParticles() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  particlesArray = [];
+  const layers = [
+      { count: Math.floor(particleCount * 0.25), radius: 0.5, speed: 0.1, opacity: 0.4 },
+      { count: Math.floor(particleCount * 0.50), radius: 1.0, speed: 0.2, opacity: 0.7 },
+      { count: Math.floor(particleCount * 0.25), radius: 1.5, speed: 0.3, opacity: 1.0 }
+  ];
+  layers.forEach(layer => {
+      for (let i = 0; i < layer.count; i++) {
+          const x = Math.random() * canvas.width;
+          const y = Math.random() * canvas.height;
+          const dx = (Math.random() - 0.5) * layer.speed;
+          const dy = (Math.random() - 0.5) * layer.speed;
+          const radius = Math.random() * layer.radius + 0.5;
+          const color = starColors[Math.floor(Math.random() * starColors.length)];
+          particlesArray.push(new Particle(x, y, dx, dy, radius, color, layer.opacity));
+      }
+  });
+}
+
+function updateSafeZone() {
+  safeZoneRect = safeZoneEl.getBoundingClientRect();
+}
+
+function rectsOverlap(r1, r2) {
+  return !(r1.right < r2.left || r1.left > r2.right || r1.bottom < r2.top || r1.top > r2.bottom);
+}
+
+function getSafeRandomPosition() {
+  let x, y, isSafe, attempts = 0;
+  do {
+    let effectiveCardWidth = cardWidth * cardScale;
+    let effectiveCardHeight = cardHeight * cardScale;
+    x = Math.random() * (window.innerWidth - effectiveCardWidth);
+    y = Math.random() * (window.innerHeight - effectiveCardHeight);
+    const newRect = { left: x, top: y, right: x + effectiveCardWidth, bottom: y + effectiveCardHeight };
+    isSafe = !rectsOverlap(newRect, safeZoneRect);
+    if (isSafe) {
+      for (const existing of floatingCards) {
+        const existingRect = {
+          left: existing.x, top: existing.y,
+          right: existing.x + (cardWidth * cardScale), bottom: existing.y + (cardHeight * cardScale)
+        };
+        if (rectsOverlap(newRect, existingRect)) {
+          isSafe = false; break;
+        }
+      }
+    }
+    attempts++;
+  } while (!isSafe && attempts < 100);
+  return { x, y };
+}
 
 function createFloatingCard(data) {
   if (!data) return;
   const { x, y } = getSafeRandomPosition();
 
-  // Dış Katman: Konum, ölçek ve gölgeden sorumlu
   const wrapper = document.createElement('div');
   wrapper.className = 'card-wrapper';
   wrapper.style.opacity = '0';
   wrapper.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${cardScale})`;
-  wrapper.style.width = `${cardWidth}px`;
-  wrapper.style.height = `${cardHeight}px`;
 
-  // İç Katman (Kırpıcı): Sadece yuvarlak köşe ve kırpmadan sorumlu
-  const clippingDiv = document.createElement('div');
-  clippingDiv.style.width = '100%';
-  clippingDiv.style.height = '100%';
-  clippingDiv.style.borderRadius = '12px';
-  clippingDiv.style.overflow = 'hidden';
-  clippingDiv.style.position = 'relative';
-  clippingDiv.style.zIndex = '1';
-
-  // Iframe: Sadece içeriği göstermekle sorumlu
   const iframe = document.createElement('iframe');
-  iframe.style.width = '100%';
-  iframe.style.height = '100%';
-  iframe.style.border = 'none';
+  iframe.style.borderRadius = '12px';
   iframe.src = data.embedSrc;
+  iframe.width = `${cardWidth}px`;
+  iframe.height = `${cardHeight}px`;
   iframe.frameBorder = '0';
   iframe.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
   iframe.loading = "lazy";
 
-  // Katmanları iç içe yerleştiriyoruz: wrapper -> clippingDiv -> iframe
-  clippingDiv.appendChild(iframe);
-  wrapper.appendChild(clippingDiv);
+  wrapper.appendChild(iframe);
   cardContainer.appendChild(wrapper);
 
   const card = {
@@ -201,47 +309,117 @@ function createFloatingCard(data) {
   }, CARD_LIFETIME);
 }
 
-function shuffleArray(arr) { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; }
-function getNextCard() { if (shuffledPlaylist.length === 0) shuffledPlaylist = shuffleArray([...allCards]); return shuffledPlaylist.pop(); }
-function debounce(func, wait) { let timeout; return function executedFunction(...args) { const later = () => { clearTimeout(timeout); func(...args); }; clearTimeout(timeout); timeout = setTimeout(later, wait); }; }
-function handleResize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; setDynamicVariables(); updateSafeZone(); initParticles(); }
+function shuffleArray(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function getNextCard() {
+  if (shuffledPlaylist.length === 0) shuffledPlaylist = shuffleArray([...allCards]);
+  return shuffledPlaylist.pop();
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => { clearTimeout(timeout); func(...args); };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+function handleResize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    setDynamicVariables();
+    updateSafeZone();
+    initParticles();
+}
 
 //---- ANA ANİMASYON DÖNGÜSÜ ----//
 function masterAnimate() {
   ctx.clearRect(0, 0, innerWidth, innerHeight);
   particlesArray.forEach(p => { p.update(); p.draw(); });
+
   floatingCards.forEach((card, i) => {
-    let effectiveCardWidth = cardWidth * cardScale; let effectiveCardHeight = cardHeight * cardScale;
-    if (!card.isPaused) { card.x += card.directionX; card.y += card.directionY; if (card.x <= 0 || card.x >= window.innerWidth - effectiveCardWidth) card.directionX *= -1; if (card.y <= 0 || card.y >= window.innerHeight - effectiveCardHeight) card.directionY *= -1; }
+    let effectiveCardWidth = cardWidth * cardScale;
+    let effectiveCardHeight = cardHeight * cardScale;
+    if (!card.isPaused) {
+      card.x += card.directionX;
+      card.y += card.directionY;
+      if (card.x <= 0 || card.x >= window.innerWidth - effectiveCardWidth) card.directionX *= -1;
+      if (card.y <= 0 || card.y >= window.innerHeight - effectiveCardHeight) card.directionY *= -1;
+    }
     const rect = { left: card.x, top: card.y, right: card.x + effectiveCardWidth, bottom: card.y + effectiveCardHeight };
-    if (rectsOverlap(rect, safeZoneRect)) { card.directionX *= -1.2; card.directionY *= -1.2; card.x += card.directionX * 3; card.y += card.directionY * 3; }
-    for (let j = i + 1; j < floatingCards.length; j++) { const other = floatingCards[j]; const otherRect = { left: other.x, top: other.y, right: other.x + effectiveCardWidth, bottom: other.y + effectiveCardHeight }; if (rectsOverlap(rect, otherRect)) { [card.directionX, other.directionX] = [other.directionX, card.directionX]; [card.directionY, other.directionY] = [other.directionY, card.directionY]; } }
+    if (rectsOverlap(rect, safeZoneRect)) {
+      card.directionX *= -1.2;
+      card.directionY *= -1.2;
+      card.x += card.directionX * 3;
+      card.y += card.directionY * 3;
+    }
+    for (let j = i + 1; j < floatingCards.length; j++) {
+      const other = floatingCards[j];
+      const otherRect = {
+        left: other.x, top: other.y,
+        right: other.x + effectiveCardWidth, bottom: other.y + effectiveCardHeight
+      };
+      if (rectsOverlap(rect, otherRect)) {
+        [card.directionX, other.directionX] = [other.directionX, card.directionX];
+        [card.directionY, other.directionY] = [other.directionY, card.directionY];
+      }
+    }
     card.element.style.transform = `translate3d(${card.x}px, ${card.y}px, 0) scale(${cardScale})`;
   });
+
   requestAnimationFrame(masterAnimate);
 }
 
 //---- KODU BAŞLATAN KISIM ----//
-setDynamicVariables(); updateSafeZone(); initParticles(); masterAnimate();
+setDynamicVariables();
+updateSafeZone();
+initParticles();
+masterAnimate();
+
 setInterval(() => {
   if (floatingCards.length < maxConcurrentCards) {
     const onScreen = floatingCards.map(f => f.cardData.embedSrc);
     let nextCard = getNextCard(), attempts = 0;
-    while (onScreen.includes(nextCard.embedSrc) && attempts < allCards.length) { shuffledPlaylist.unshift(nextCard); nextCard = getNextCard(); attempts++; }
-    if (!onScreen.includes(nextCard.embedSrc)) { createFloatingCard(nextCard); }
+    while (onScreen.includes(nextCard.embedSrc) && attempts < allCards.length) {
+      shuffledPlaylist.unshift(nextCard);
+      nextCard = getNextCard();
+      attempts++;
+    }
+    if (!onScreen.includes(nextCard.embedSrc)) {
+      createFloatingCard(nextCard);
+    }
   }
 }, 1500);
+
 window.addEventListener('resize', debounce(handleResize, 250));
 window.addEventListener('message', event => {
     try {
         const data = JSON.parse(event.data);
         if (data.command === 'play' || data.command === 'pause') {
             let sourceIframe = null;
-            document.querySelectorAll('iframe').forEach(iframe => { if (iframe.contentWindow === event.source) { sourceIframe = iframe; } });
-            if (sourceIframe) { const wrapperId = sourceIframe.parentElement.parentElement.id; const card = activeCards[wrapperId]; if (card) { card.isPaused = (data.command === 'play'); } }
+            document.querySelectorAll('iframe').forEach(iframe => {
+                if (iframe.contentWindow === event.source) {
+                    sourceIframe = iframe;
+                }
+            });
+            if (sourceIframe) {
+                const wrapperId = sourceIframe.parentElement.id;
+                const card = activeCards[wrapperId];
+                if (card) {
+                    card.isPaused = (data.command === 'play');
+                }
+            }
         }
     } catch (e) { /* Ignore non-JSON messages */ }
 });
+
 </script>
 </body>
 </html>
