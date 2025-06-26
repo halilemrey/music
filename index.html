@@ -13,7 +13,11 @@
             margin: 0;
             overflow: hidden;
             font-family: 'Poppins', sans-serif;
-            background-color: #000000;
+            background-color: #0c0a18;
+            background-image: url('https://w.wallha.com/ws/13/g9ndE8o5.jpg');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
         }
 
         #particle-canvas {
@@ -31,8 +35,6 @@
             transition: opacity 1.5s ease;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
         }
-
-        
 
         .spotify-icon {
             transition: transform 0.3s, filter 0.3s;
@@ -147,6 +149,7 @@
         let cardScale = 1.0;
         const CARD_LIFETIME = 5000;
         const FADE_OUT_DURATION = 1500;
+        
         const allCards = [{
             embedSrc: "https://open.spotify.com/embed/track/07q0QVgO56EorrSGHC48y3?utm_source=generator"
         }, {
@@ -181,12 +184,8 @@
             embedSrc: "https://open.spotify.com/embed/track/5gNchicUY2EvUvZOE2eBzg?utm_source=generator"
         },{
             embedSrc: "https://open.spotify.com/embed/track/5Cdt8J09LxpqmhKmOZ0fZr?utm_source=generator"
-        },{
-            embedSrc: "https://open.spotify.com/embed/track/4ntaCVtTclqT43krz9n3Z9?utm_source=generator"
-        },{
-            embedSrc: "https://open.spotify.com/embed/track/4LK36kV9w3KBD2GYL26ZBq?utm_source=generator"
-        },
-            ];
+        }];
+
         const cardContainer = document.getElementById('card-container');
         const safeZoneEl = document.querySelector('.content-safe-zone');
         const canvas = document.getElementById('particle-canvas');
@@ -198,21 +197,25 @@
         let shuffledPlaylist = [];
         const starColors = ['#FFFFFF', '#E0E0E0', '#B0B0B0', '#ADD8E6'];
 
+        let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+
         //---- SINIF TANIMLAMALARI (CLASSES) ----//
         class Particle {
-            constructor(x, y, dx, dy, radius, color, opacity) {
+            constructor(x, y, dx, dy, radius, color, opacity, depth) {
                 this.x = x;
                 this.y = y;
+                this.originX = x;
+                this.originY = y;
                 this.directionX = dx;
                 this.directionY = dy;
                 this.radius = radius;
                 this.baseRadius = radius;
                 this.color = color;
                 this.opacity = opacity;
+                this.depth = depth;
                 this.pulseSpeed = Math.random() * 0.04 + 0.01;
                 this.angle = Math.random() * Math.PI * 2;
             }
-
             draw() {
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
@@ -220,18 +223,18 @@
                 ctx.fill();
                 ctx.closePath();
             }
-
             update() {
-                if (this.x > canvas.width + this.radius) this.x = -this.radius;
-                if (this.x < -this.radius) this.x = canvas.width + this.radius;
-                if (this.y > canvas.height + this.radius) this.y = -this.radius;
-                if (this.y < -this.radius) this.y = canvas.height + this.radius;
+                this.x = this.originX - (mouse.x - window.innerWidth / 2) * this.depth;
+                this.y = this.originY - (mouse.y - window.innerHeight / 2) * this.depth;
+                this.originX += this.directionX;
+                this.originY += this.directionY;
+                if (this.originX > canvas.width + this.radius) this.originX = -this.radius;
+                if (this.originX < -this.radius) this.originX = canvas.width + this.radius;
+                if (this.originY > canvas.height + this.radius) this.originY = -this.radius;
+                if (this.originY < -this.radius) this.originY = canvas.height + this.radius;
                 this.angle += this.pulseSpeed;
                 this.radius = this.baseRadius + Math.sin(this.angle) * (this.baseRadius * 0.2);
-                this.x += this.directionX;
-                this.y += this.directionY;
             }
-
             hexToRgb(hex) {
                 let r = 0, g = 0, b = 0;
                 if (hex.length == 7) {
@@ -240,6 +243,39 @@
                     b = parseInt(hex.substring(5, 7), 16);
                 }
                 return `${r},${g},${b}`;
+            }
+        }
+        
+        class ShootingStar {
+            constructor() { this.reset(); }
+            reset() {
+                this.len = Math.random() * 80 + 10;
+                // KAYAN YILDIZ HIZI YAVAŞLATILDI
+                this.speed = Math.random() * 4 + 4; // Önceki: Math.random() * 10 + 6
+                this.opacity = 0.7 + Math.random() * 0.3;
+                this.angle = (Math.PI / 6) + (Math.random() * Math.PI / 6); // 30-60 derece arası
+
+                if (Math.random() > 0.5) {
+                    this.x = Math.random() * canvas.width;
+                    this.y = 0;
+                } else {
+                    this.x = 0;
+                    this.y = Math.random() * canvas.height;
+                }
+            }
+            update() {
+                this.x += this.speed * Math.cos(this.angle);
+                this.y += this.speed * Math.sin(this.angle);
+                this.opacity -= 0.01;
+                if(this.x > canvas.width || this.y > canvas.height || this.opacity <= 0){ this.reset(); }
+            }
+            draw() {
+                ctx.beginPath();
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x - this.len * Math.cos(this.angle), this.y - this.len * Math.sin(this.angle));
+                ctx.strokeStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                ctx.lineWidth = 2;
+                ctx.stroke();
             }
         }
 
@@ -264,22 +300,16 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             particlesArray = [];
+
+            // Arka plan yıldız hızları orijinal halinde bırakıldı
             const layers = [{
-                count: Math.floor(particleCount * 0.25),
-                radius: 0.5,
-                speed: 0.1,
-                opacity: 0.4
+                count: Math.floor(particleCount * 0.25), radius: 0.5, speed: 0.1, opacity: 0.4, depth: 0.01
             }, {
-                count: Math.floor(particleCount * 0.50),
-                radius: 1.0,
-                speed: 0.2,
-                opacity: 0.7
+                count: Math.floor(particleCount * 0.50), radius: 1.0, speed: 0.2, opacity: 0.7, depth: 0.02
             }, {
-                count: Math.floor(particleCount * 0.25),
-                radius: 1.5,
-                speed: 0.3,
-                opacity: 1.0
-            }, ];
+                count: Math.floor(particleCount * 0.25), radius: 1.5, speed: 0.3, opacity: 1.0, depth: 0.04
+            }];
+
             layers.forEach(layer => {
                 for (let i = 0; i < layer.count; i++) {
                     const x = Math.random() * canvas.width;
@@ -288,9 +318,14 @@
                     const dy = (Math.random() - 0.5) * layer.speed;
                     const radius = Math.random() * layer.radius + 0.5;
                     const color = starColors[Math.floor(Math.random() * starColors.length)];
-                    particlesArray.push(new Particle(x, y, dx, dy, radius, color, layer.opacity));
+                    particlesArray.push(new Particle(x, y, dx, dy, radius, color, layer.opacity, layer.depth));
                 }
             });
+
+            const numberOfShootingStars = 2;
+            for(let i = 0; i < numberOfShootingStars; i++) {
+                particlesArray.push(new ShootingStar());
+            }
         }
 
         function updateSafeZone() {
@@ -434,10 +469,12 @@
         //---- ANA ANİMASYON DÖNGÜSÜ ----//
         function masterAnimate() {
             ctx.clearRect(0, 0, innerWidth, innerHeight);
+            
             particlesArray.forEach(p => {
                 p.update();
                 p.draw();
             });
+            
             floatingCards.forEach((card, i) => {
                 let effectiveCardWidth = cardWidth * cardScale;
                 let effectiveCardHeight = cardHeight * cardScale;
@@ -488,7 +525,7 @@
                     nextCard = getNextCard();
                     attempts++;
                 }
-                if (!onScreen.includes(nextCard.embedSrc)) {
+                if (nextCard && !onScreen.includes(nextCard.embedSrc)) {
                     createFloatingCard(nextCard);
                 }
             }
@@ -499,13 +536,16 @@
         initParticles();
         masterAnimate();
 
-        // İlk kartın tam 1 saniye sonra gelmesini sağlar (tek seferlik).
         setTimeout(tryToCreateCard, 1000);
-
-        // Sonraki kartların 1.5 saniye aralıklarla gelmesini sağlar (sürekli döngü).
         setInterval(tryToCreateCard, 1500);
 
         window.addEventListener('resize', debounce(handleResize, 250));
+        
+        window.addEventListener('mousemove', e => {
+            mouse.x = e.x;
+            mouse.y = e.y;
+        });
+
         window.addEventListener('message', event => {
             try {
                 const data = JSON.parse(event.data);
