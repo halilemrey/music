@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Halil Emre - Music Profile</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&display=swap" rel="stylesheet">
+
     <style>
         body {
             margin: 0;
@@ -31,9 +35,35 @@
 
         .card-wrapper {
             position: absolute;
-            will-change: transform;
-            transition: opacity 1.5s ease;
+            will-change: transform, opacity;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            transition: transform 1.2s cubic-bezier(0.2, 1, 0.4, 1),
+                        opacity 0.8s ease-out;
+        }
+
+        .card-wrapper::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 50%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transform: skewX(-25deg);
+            transition: left 0.75s;
+            z-index: 10;
+        }
+
+        .card-wrapper:hover::before {
+            left: 150%;
+        }
+
+        @media (min-width: 769px) {
+            .card-wrapper:hover {
+                box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+                z-index: 15;
+            }
         }
 
         .spotify-icon {
@@ -124,14 +154,24 @@
         }
     </style>
 </head>
+
 <body class="text-white">
 
     <canvas id="particle-canvas"></canvas>
+
     <div class="footer-disclaimer">
-        Bu site kişisel ve ticari olmayan bir projedir. Tüm albüm kapakları ve marka logoları, ilgili sahiplerinin mülkiyetindedir.
+        <a href="https://www.instagram.com/halil_emrey/" target="_blank" class="inline-block opacity-70 hover:opacity-100 transition-opacity mb-2">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/a/a5/Instagram_icon.png/600px-Instagram_icon.png" alt="Instagram" class="w-5 h-5" />
+        </a>
+        <div>
+            Bu site kişisel ve ticari olmayan bir projedir. Tüm albüm kapakları ve marka logoları, ilgili sahiplerinin mülkiyetindedir.
+        </div>
     </div>
+
     <div class="content-safe-zone">
-        <h1 class="text-5xl font-bold mb-4">Halil Emre</h1>
+        <h1 class="text-5xl font-bold mb-4">
+            Halil Emre
+        </h1>
         <p class="text-lg mb-6 text-gray-300">
             Welcome to my music space. Cards will find you here 🎶
         </p>
@@ -141,73 +181,57 @@
             </a>
         </div>
     </div>
+
     <div id="card-container" class="absolute top-0 left-0 w-full h-full z-0"></div>
 
     <script>
-        //---- DEĞİŞKEN TANIMLAMALARI (TEK BİR YERDE) ----//
-        let cardWidth, cardHeight, maxConcurrentCards, particleCount;
+        //---- DEĞİŞKEN TANIMLAMALARI ----//
+        let cardWidth;
+        let cardHeight;
+        let maxConcurrentCards;
+        let particleCount;
         let cardScale = 1.0;
         const CARD_LIFETIME = 5000;
-        const FADE_OUT_DURATION = 1500;
-        
-        const allCards = [{
-            embedSrc: "https://open.spotify.com/embed/track/07q0QVgO56EorrSGHC48y3?utm_source=generator"
-        }, {
-            embedSrc: "https://open.spotify.com/embed/track/6si71supnBUhddjR2FJc2L?utm_source=generator"
-        }, {
-            embedSrc: "https://open.spotify.com/embed/album/0mHYRe0jUP2pWxrL7oP5qO?utm_source=generator"
-        }, {
-            embedSrc: "https://open.spotify.com/embed/track/3tCcO0uqXnoB8NnFuMPoIS?utm_source=generator"
-        }, {
-            embedSrc: "https://open.spotify.com/embed/track/68xnudIZzP49DreYAMlbqZ?utm_source=generator"
-        }, {
-            embedSrc: "https://open.spotify.com/embed/track/1wMvP4KuZOcA3kum0TE6x6?utm_source=generator"
-        }, {
-            embedSrc: "https://open.spotify.com/embed/track/4lwfABJjnJYPIgLjuGiB63?utm_source=generator"
-        }, {
-            embedSrc: "https://open.spotify.com/embed/track/3hRV0jL3vUpRrcy398teAU?utm_source=generator"
-        }, {
-            embedSrc: "https://open.spotify.com/embed/track/6EMErc5L7mnqJ5JsWFYRgX?utm_source=generator"
-        }, {
-            embedSrc: "https://open.spotify.com/embed/track/52v12pqh8SBzZ6OSi8ciUL?utm_source=generator"
-        }, {
-            embedSrc: "https://open.spotify.com/embed/track/6uS2G7PdDL0qmYs6glOgrO?utm_source=generator"
-        }, {
-            embedSrc: "https://open.spotify.com/embed/track/31AOj9sFz2gM0O3hMARRBx?utm_source=generator"
-        }, {
-            embedSrc: "https://open.spotify.com/embed/track/4Xvs1baIxOaEwplbKGu9uW?utm_source=generator"
-        }, {
-            embedSrc: "https://open.spotify.com/embed/track/41ltDUT9gjqZMWuiDeB6Og?utm_source=generator"
-        }, {
-            embedSrc: "https://open.spotify.com/embed/track/1FAERur0SW0KB38aii9tPF?utm_source=generator"
-        },{
-            embedSrc: "https://open.spotify.com/embed/track/5gNchicUY2EvUvZOE2eBzg?utm_source=generator"
-        },{
-            embedSrc: "https://open.spotify.com/embed/track/5Cdt8J09LxpqmhKmOZ0fZr?utm_source=generator"
-        },{
-            embedSrc: "https://open.spotify.com/embed/track/5RaBP5ZEKsjhU0EOhvfunB?utm_source=generator"
-        },{
-            embedSrc: "https://open.spotify.com/embed/track/3FJIkYZLcZMXi7h7z509en?utm_source=generator"
-        },{
-            embedSrc: "https://open.spotify.com/embed/track/32f4hFMwHkw3Ooeqf0hbnK?utm_source=generator"
-        }
-                         
-            ];
+
+        const allCards = [
+            { embedSrc: "https://open.spotify.com/embed/track/07q0QVgO56EorrSGHC48y3?utm_source=generator" },
+            { embedSrc: "https://open.spotify.com/embed/track/6si71supnBUhddjR2FJc2L?utm_source=generator" },
+            { embedSrc: "https://open.spotify.com/embed/album/0mHYRe0jUP2pWxrL7oP5qO?utm_source=generator" },
+            { embedSrc: "https://open.spotify.com/embed/track/3tCcO0uqXnoB8NnFuMPoIS?utm_source=generator" },
+            { embedSrc: "https://open.spotify.com/embed/track/68xnudIZzP49DreYAMlbqZ?utm_source=generator" },
+            { embedSrc: "https://open.spotify.com/embed/track/1wMvP4KuZOcA3kum0TE6x6?utm_source=generator" },
+            { embedSrc: "https://open.spotify.com/embed/track/4lwfABJjnJYPIgLjuGiB63?utm_source=generator" },
+            { embedSrc: "https://open.spotify.com/embed/track/3hRV0jL3vUpRrcy398teAU?utm_source=generator" },
+            { embedSrc: "https://open.spotify.com/embed/track/6EMErc5L7mnqJ5JsWFYRgX?utm_source=generator" },
+            { embedSrc: "https://open.spotify.com/embed/track/52v12pqh8SBzZ6OSi8ciUL?utm_source=generator" },
+            { embedSrc: "https://open.spotify.com/embed/track/6uS2G7PdDL0qmYs6glOgrO?utm_source=generator" },
+            { embedSrc: "https://open.spotify.com/embed/track/31AOj9sFz2gM0O3hMARRBx?utm_source=generator" },
+            { embedSrc: "https://open.spotify.com/embed/track/4Xvs1baIxOaEwplbKGu9uW?utm_source=generator" },
+            { embedSrc: "https://open.spotify.com/embed/track/41ltDUT9gjqZMWuiDeB6Og?utm_source=generator" },
+            { embedSrc: "https://open.spotify.com/embed/track/1FAERur0SW0KB38aii9tPF?utm_source=generator" },
+            { embedSrc: "https://open.spotify.com/embed/track/5gNchicUY2EvUvZOE2eBzg?utm_source=generator" },
+            { embedSrc: "https://open.spotify.com/embed/track/5Cdt8J09LxpqmhKmOZ0fZr?utm_source=generator" },
+            { embedSrc: "https://open.spotify.com/embed/track/5RaBP5ZEKsjhU0EOhvfunB?utm_source=generator" },
+            { embedSrc: "https://open.spotify.com/embed/track/3FJIkYZLcZMXi7h7z509en?utm_source=generator" },
+            { embedSrc: "https://open.spotify.com/embed/track/779w7valkzLVzFiTC0wHkp?utm_source=generator" },
+            { embedSrc: "https://open.spotify.com/embed/track/32f4hFMwHkw3Ooeqf0hbnK?utm_source=generator" }
+        ];
 
         const cardContainer = document.getElementById('card-container');
         const safeZoneEl = document.querySelector('.content-safe-zone');
         const canvas = document.getElementById('particle-canvas');
         const ctx = canvas.getContext('2d');
         let safeZoneRect;
-        let floatingCards = [];
-        let activeCards = {};
+        let activeCardPositions = [];
         let particlesArray = [];
         let shuffledPlaylist = [];
+        let shuffledRotations = [];
         const starColors = ['#FFFFFF', '#E0E0E0', '#B0B0B0', '#ADD8E6'];
+        let mouse = {
+            x: window.innerWidth / 2,
+            y: window.innerHeight / 2
+        };
 
-        let mouse = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
-
-        //---- SINIF TANIMLAMALARI (CLASSES) ----//
         class Particle {
             constructor(x, y, dx, dy, radius, color, opacity, depth) {
                 this.x = x;
@@ -224,6 +248,7 @@
                 this.pulseSpeed = Math.random() * 0.04 + 0.01;
                 this.angle = Math.random() * Math.PI * 2;
             }
+            
             draw() {
                 ctx.beginPath();
                 ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
@@ -231,18 +256,30 @@
                 ctx.fill();
                 ctx.closePath();
             }
+
             update() {
                 this.x = this.originX - (mouse.x - window.innerWidth / 2) * this.depth;
                 this.y = this.originY - (mouse.y - window.innerHeight / 2) * this.depth;
                 this.originX += this.directionX;
                 this.originY += this.directionY;
-                if (this.originX > canvas.width + this.radius) this.originX = -this.radius;
-                if (this.originX < -this.radius) this.originX = canvas.width + this.radius;
-                if (this.originY > canvas.height + this.radius) this.originY = -this.radius;
-                if (this.originY < -this.radius) this.originY = canvas.height + this.radius;
+
+                if (this.originX > canvas.width + this.radius) {
+                    this.originX = -this.radius;
+                }
+                if (this.originX < -this.radius) {
+                    this.originX = canvas.width + this.radius;
+                }
+                if (this.originY > canvas.height + this.radius) {
+                    this.originY = -this.radius;
+                }
+                if (this.originY < -this.radius) {
+                    this.originY = canvas.height + this.radius;
+                }
+                
                 this.angle += this.pulseSpeed;
                 this.radius = this.baseRadius + Math.sin(this.angle) * (this.baseRadius * 0.2);
             }
+
             hexToRgb(hex) {
                 let r = 0, g = 0, b = 0;
                 if (hex.length == 7) {
@@ -253,16 +290,18 @@
                 return `${r},${g},${b}`;
             }
         }
-        
+
         class ShootingStar {
-            constructor() { this.reset(); }
+            constructor() {
+                this.reset();
+            }
+
             reset() {
                 this.len = Math.random() * 80 + 10;
-                // KAYAN YILDIZ HIZI YAVAŞLATILDI
-                this.speed = Math.random() * 4 + 4; // Önceki: Math.random() * 10 + 6
+                this.speed = Math.random() * 4 + 4;
                 this.opacity = 0.7 + Math.random() * 0.3;
-                this.angle = (Math.PI / 6) + (Math.random() * Math.PI / 6); // 30-60 derece arası
-
+                this.angle = (Math.PI / 6) + (Math.random() * Math.PI / 6);
+                
                 if (Math.random() > 0.5) {
                     this.x = Math.random() * canvas.width;
                     this.y = 0;
@@ -271,12 +310,17 @@
                     this.y = Math.random() * canvas.height;
                 }
             }
+
             update() {
                 this.x += this.speed * Math.cos(this.angle);
                 this.y += this.speed * Math.sin(this.angle);
                 this.opacity -= 0.01;
-                if(this.x > canvas.width || this.y > canvas.height || this.opacity <= 0){ this.reset(); }
+
+                if (this.x > canvas.width || this.y > canvas.height || this.opacity <= 0) {
+                    this.reset();
+                }
             }
+
             draw() {
                 ctx.beginPath();
                 ctx.moveTo(this.x, this.y);
@@ -287,18 +331,17 @@
             }
         }
 
-        //---- FONKSİYON TANIMLAMALARI ----//
         function setDynamicVariables() {
             if (window.innerWidth <= 768) {
                 cardWidth = 150;
                 cardHeight = 96;
-                maxConcurrentCards = 3;
+                maxConcurrentCards = 4;
                 particleCount = 115;
                 cardScale = 0.9;
             } else {
                 cardWidth = 300;
                 cardHeight = 152;
-                maxConcurrentCards = 4;
+                maxConcurrentCards = 5;
                 particleCount = 200;
                 cardScale = 1.0;
             }
@@ -308,15 +351,12 @@
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             particlesArray = [];
-
-            // Arka plan yıldız hızları orijinal halinde bırakıldı
-            const layers = [{
-                count: Math.floor(particleCount * 0.25), radius: 0.5, speed: 0.1, opacity: 0.4, depth: 0.01
-            }, {
-                count: Math.floor(particleCount * 0.50), radius: 1.0, speed: 0.2, opacity: 0.7, depth: 0.02
-            }, {
-                count: Math.floor(particleCount * 0.25), radius: 1.5, speed: 0.3, opacity: 1.0, depth: 0.04
-            }];
+            
+            const layers = [
+                { count: Math.floor(particleCount * 0.25), radius: 0.5, speed: 0.1, opacity: 0.4, depth: 0.01 },
+                { count: Math.floor(particleCount * 0.50), radius: 1.0, speed: 0.2, opacity: 0.7, depth: 0.02 },
+                { count: Math.floor(particleCount * 0.25), radius: 1.5, speed: 0.3, opacity: 1.0, depth: 0.04 }
+            ];
 
             layers.forEach(layer => {
                 for (let i = 0; i < layer.count; i++) {
@@ -331,7 +371,7 @@
             });
 
             const numberOfShootingStars = 2;
-            for(let i = 0; i < numberOfShootingStars; i++) {
+            for (let i = 0; i < numberOfShootingStars; i++) {
                 particlesArray.push(new ShootingStar());
             }
         }
@@ -344,70 +384,97 @@
             return !(r1.right < r2.left || r1.left > r2.right || r1.bottom < r2.top || r1.top > r2.bottom);
         }
 
+        function generateNewRotations() {
+            const baseRotations = [-35, -28, -21, -14, -7, 7, 14, 21, 28, 35];
+            const variedRotations = baseRotations.map(angle => angle + (Math.random() * 4 - 2));
+            shuffledRotations = shuffleArray(variedRotations);
+        }
+
         function getSafeRandomPosition() {
-            let x, y, isSafe, attempts = 0;
+            let x, y, isSafe, boundingBox;
+            let attempts = 0;
+            const maxAttempts = 200;
+            const cardMargin = 15;
+            
+            if (shuffledRotations.length === 0) {
+                generateNewRotations();
+            }
+            const rotation = shuffledRotations.pop();
+
+            const rotationRad = rotation * Math.PI / 180;
+            const w = cardWidth * cardScale;
+            const h = cardHeight * cardScale;
+            const rotatedWidth = Math.abs(w * Math.cos(rotationRad)) + Math.abs(h * Math.sin(rotationRad));
+            const rotatedHeight = Math.abs(w * Math.sin(rotationRad)) + Math.abs(h * Math.cos(rotationRad));
+            
             do {
-                let effectiveCardWidth = cardWidth * cardScale;
-                let effectiveCardHeight = cardHeight * cardScale;
-                x = Math.random() * (window.innerWidth - effectiveCardWidth);
-                y = Math.random() * (window.innerHeight - effectiveCardHeight);
-                const newRect = {
-                    left: x,
-                    top: y,
-                    right: x + effectiveCardWidth,
-                    bottom: y + effectiveCardHeight
+                const randomX = Math.random() * (window.innerWidth - rotatedWidth);
+                const randomY = Math.random() * (window.innerHeight - rotatedHeight);
+                x = randomX + (rotatedWidth - w) / 2;
+                y = randomY + (rotatedHeight - h) / 2;
+                boundingBox = {
+                    left: randomX,
+                    top: randomY,
+                    right: randomX + rotatedWidth,
+                    bottom: randomY + rotatedHeight
                 };
-                isSafe = !rectsOverlap(newRect, safeZoneRect);
+                const collisionBox = {
+                    left: boundingBox.left - cardMargin,
+                    top: boundingBox.top - cardMargin,
+                    right: boundingBox.right + cardMargin,
+                    bottom: boundingBox.bottom + cardMargin
+                };
+                isSafe = !rectsOverlap(collisionBox, safeZoneRect);
                 if (isSafe) {
-                    for (const existing of floatingCards) {
-                        const existingRect = {
-                            left: existing.x,
-                            top: existing.y,
-                            right: existing.x + (cardWidth * cardScale),
-                            bottom: existing.y + (cardHeight * cardScale)
-                        };
-                        if (rectsOverlap(newRect, existingRect)) {
+                    for (const existingRect of activeCardPositions) {
+                        if (rectsOverlap(collisionBox, existingRect)) {
                             isSafe = false;
                             break;
                         }
                     }
                 }
                 attempts++;
-            } while (!isSafe && attempts < 100);
-            return {
-                x,
-                y
-            };
+            } while (!isSafe && attempts < maxAttempts);
+
+            if (!isSafe) {
+                console.warn(`Could not find a safe position for a new card after ${maxAttempts} attempts.`);
+                return null;
+            }
+            return { x, y, rotation, boundingBox };
         }
 
-        function createFloatingCard(data) {
-            if (!data) return;
-            const {
-                x,
-                y
-            } = getSafeRandomPosition();
+        function createStaticCard(data) {
+            if (!data) {
+                return;
+            }
+            
+            const positionData = getSafeRandomPosition();
+            if (!positionData) {
+                return;
+            }
+
+            const { x, y, rotation, boundingBox } = positionData;
+            activeCardPositions.push(boundingBox);
 
             const wrapper = document.createElement('div');
             wrapper.className = 'card-wrapper';
-            wrapper.style.opacity = '0';
-            wrapper.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${cardScale})`;
             wrapper.style.width = `${cardWidth}px`;
             wrapper.style.height = `${cardHeight}px`;
+            
+            const startX = window.innerWidth / 2 - (cardWidth / 2);
+            const startY = window.innerHeight / 2 - (cardHeight / 2);
+            const randomStartRotation = (Math.random() - 0.5) * 30;
+
+            wrapper.style.zIndex = '1'; 
+            wrapper.style.opacity = '0';
+            wrapper.style.transform = `translate3d(${startX}px, ${startY}px, 0) scale(0.5) rotate(${randomStartRotation}deg)`;
 
             const clippingDiv = document.createElement('div');
-            clippingDiv.style.width = '100%';
-            clippingDiv.style.height = '100%';
-            clippingDiv.style.borderRadius = '12px';
-            clippingDiv.style.overflow = 'hidden';
-            clippingDiv.style.position = 'relative';
-            clippingDiv.style.zIndex = '1';
-
+            clippingDiv.style.cssText = 'width: 100%; height: 100%; border-radius: 12px; overflow: hidden; position: relative; z-index: 1;';
+            
             const iframe = document.createElement('iframe');
-            iframe.style.width = '100%';
-            iframe.style.height = '100%';
-            iframe.style.border = 'none';
+            iframe.style.cssText = 'width: 100%; height: 100%; border: none;';
             iframe.src = data.embedSrc;
-            iframe.frameBorder = '0';
             iframe.allow = "autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture";
             iframe.loading = "lazy";
 
@@ -415,30 +482,26 @@
             wrapper.appendChild(clippingDiv);
             cardContainer.appendChild(wrapper);
 
-            const card = {
-                cardData: data,
-                element: wrapper,
-                x,
-                y,
-                directionX: (Math.random() - 0.5) * 0.4,
-                directionY: (Math.random() - 0.5) * 0.4,
-                isPaused: false
-            };
-            floatingCards.push(card);
-            activeCards[wrapper.id = `card-${Date.now()}`] = card;
+            setTimeout(() => {
+                wrapper.style.zIndex = '2';
+                wrapper.style.opacity = '1';
+                wrapper.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${cardScale}) rotate(${rotation}deg)`;
+            }, 100);
 
             setTimeout(() => {
-                wrapper.style.opacity = '1'
-            }, 100);
-            setTimeout(() => {
                 wrapper.style.opacity = '0';
-                setTimeout(() => {
-                    const cardIndex = floatingCards.indexOf(card);
-                    if (cardIndex > -1) floatingCards.splice(cardIndex, 1);
-                    delete activeCards[wrapper.id];
-                    if (wrapper.parentNode) wrapper.parentNode.removeChild(wrapper);
-                }, FADE_OUT_DURATION);
+                wrapper.style.transform = `translate3d(${x}px, ${y}px, 0) scale(${cardScale + 0.12}) rotate(${rotation}deg)`;
             }, CARD_LIFETIME);
+
+            setTimeout(() => {
+                const cardIndex = activeCardPositions.indexOf(boundingBox);
+                if (cardIndex > -1) {
+                    activeCardPositions.splice(cardIndex, 1);
+                }
+                if (wrapper.parentNode) {
+                    wrapper.parentNode.removeChild(wrapper);
+                }
+            }, CARD_LIFETIME + 1000);
         }
 
         function shuffleArray(arr) {
@@ -450,7 +513,9 @@
         }
 
         function getNextCard() {
-            if (shuffledPlaylist.length === 0) shuffledPlaylist = shuffleArray([...allCards]);
+            if (shuffledPlaylist.length === 0) {
+                shuffledPlaylist = shuffleArray([...allCards]);
+            }
             return shuffledPlaylist.pop();
         }
 
@@ -474,106 +539,39 @@
             initParticles();
         }
 
-        //---- ANA ANİMASYON DÖNGÜSÜ ----//
         function masterAnimate() {
-            ctx.clearRect(0, 0, innerWidth, innerHeight);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             particlesArray.forEach(p => {
                 p.update();
                 p.draw();
             });
-            
-            floatingCards.forEach((card, i) => {
-                let effectiveCardWidth = cardWidth * cardScale;
-                let effectiveCardHeight = cardHeight * cardScale;
-                if (!card.isPaused) {
-                    card.x += card.directionX;
-                    card.y += card.directionY;
-                    if (card.x <= 0 || card.x >= window.innerWidth - effectiveCardWidth) card.directionX *= -1;
-                    if (card.y <= 0 || card.y >= window.innerHeight - effectiveCardHeight) card.directionY *= -1;
-                }
-                const rect = {
-                    left: card.x,
-                    top: card.y,
-                    right: card.x + effectiveCardWidth,
-                    bottom: card.y + effectiveCardHeight
-                };
-                if (rectsOverlap(rect, safeZoneRect)) {
-                    card.directionX *= -1.2;
-                    card.directionY *= -1.2;
-                    card.x += card.directionX * 3;
-                    card.y += card.directionY * 3;
-                }
-                for (let j = i + 1; j < floatingCards.length; j++) {
-                    const other = floatingCards[j];
-                    const otherRect = {
-                        left: other.x,
-                        top: other.y,
-                        right: other.x + effectiveCardWidth,
-                        bottom: other.y + effectiveCardHeight
-                    };
-                    if (rectsOverlap(rect, otherRect)) {
-                        [card.directionX, other.directionX] = [other.directionX, card.directionX];
-                        [card.directionY, other.directionY] = [other.directionY, card.directionY];
-                    }
-                }
-                card.element.style.transform = `translate3d(${card.x}px, ${card.y}px, 0) scale(${cardScale})`;
-            });
             requestAnimationFrame(masterAnimate);
         }
 
-        //---- KODU BAŞLATAN KISIM ----//
         function tryToCreateCard() {
-            if (floatingCards.length < maxConcurrentCards) {
-                const onScreen = floatingCards.map(f => f.cardData.embedSrc);
-                let nextCard = getNextCard(),
-                    attempts = 0;
-                while (onScreen.includes(nextCard.embedSrc) && attempts < allCards.length) {
-                    shuffledPlaylist.unshift(nextCard);
-                    nextCard = getNextCard();
-                    attempts++;
-                }
-                if (nextCard && !onScreen.includes(nextCard.embedSrc)) {
-                    createFloatingCard(nextCard);
-                }
+            if (activeCardPositions.length < maxConcurrentCards) {
+                const nextCard = getNextCard();
+                createStaticCard(nextCard);
             }
         }
 
+        //--- Başlangıç Fonksiyonları ---//
         setDynamicVariables();
         updateSafeZone();
         initParticles();
+        generateNewRotations();
         masterAnimate();
-
         setTimeout(tryToCreateCard, 1000);
         setInterval(tryToCreateCard, 1500);
 
+        //--- Event Listeners ---//
         window.addEventListener('resize', debounce(handleResize, 250));
-        
         window.addEventListener('mousemove', e => {
             mouse.x = e.x;
             mouse.y = e.y;
         });
-
-        window.addEventListener('message', event => {
-            try {
-                const data = JSON.parse(event.data);
-                if (data.command === 'play' || data.command === 'pause') {
-                    let sourceIframe = null;
-                    document.querySelectorAll('iframe').forEach(iframe => {
-                        if (iframe.contentWindow === event.source) {
-                            sourceIframe = iframe;
-                        }
-                    });
-                    if (sourceIframe) {
-                        const wrapperId = sourceIframe.parentElement.parentElement.id;
-                        const card = activeCards[wrapperId];
-                        if (card) {
-                            card.isPaused = (data.command === 'play');
-                        }
-                    }
-                }
-            } catch (e) { /* Ignore non-JSON messages */ }
-        });
     </script>
 </body>
+
 </html>
